@@ -1,5 +1,5 @@
-import { ReactNode } from "react"
-import { Head, Link, Routes } from "blitz"
+import { ReactNode, Suspense } from "react"
+import { Head, Link, Routes, useSession, useMutation, useRouter } from "blitz"
 import {
   Avatar,
   Container,
@@ -31,8 +31,10 @@ const Layout = ({ title, children }: LayoutProps) => {
             <Link href="/">tiny blog.</Link>
           </Heading>
           <HStack spacing="4">
-            <NewArticle />
-            <User />
+            <Suspense fallback={null}>
+              <NewArticle />
+              <User />
+            </Suspense>
           </HStack>
         </HStack>
         <Container pt="8">{children}</Container>
@@ -42,11 +44,26 @@ const Layout = ({ title, children }: LayoutProps) => {
 }
 
 export const User = () => {
-  return <Avatar size="sm" bg="rosewater" cursor="pointer" />
+  const router = useRouter()
+  const user = useCurrentUser()
+  const [logoutMutation] = useMutation(logout)
+  return (
+    <Avatar
+      size="sm"
+      name={user?.name ?? user?.email}
+      onClick={async () => {
+        if (user) await logoutMutation()
+        else router.push(Routes.LoginPage())
+      }}
+      bg="rosewater"
+      cursor="pointer"
+    />
+  )
 }
 
 export const NewArticle = () => {
-  return (
+  const session = useSession()
+  return session.userId ? (
     <Link href={Routes.NewPost()}>
       <IconButton
         as={ChakraLink}
@@ -60,7 +77,7 @@ export const NewArticle = () => {
         borderRadius="full"
       />
     </Link>
-  )
+  ) : null
 }
 
 export default Layout
